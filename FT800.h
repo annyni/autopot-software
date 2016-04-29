@@ -306,5 +306,15 @@
 #define INVALID_TOUCH_XY     0x8000
 #define ABS(x)               ((x) > (0) ? (x) : (-x))
 
+
+void ft800memWrite8(unsigned long ftAddress, unsigned char ftData8);
+void ft800memWrite16(unsigned long ftAddress, unsigned int ftData16);
+void ft800memWrite32(unsigned long ftAddress, unsigned long ftData32);
+unsigned char ft800memRead8(unsigned long ftAddress);
+unsigned int ft800memRead16(unsigned long ftAddress);
+unsigned long ft800memRead32(unsigned long ftAddress);
+void ft800cmdWrite(unsigned char ftCommand);
+unsigned int incCMDOffset(unsigned int currentOffset, unsigned char commandSize);
+
 #endif  //FT800_h
 /** EOF FT800.h ********************************************************/
