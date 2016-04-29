@@ -4,7 +4,7 @@
 // Delcarations
 // Also see FT800_hw.h and FT800_sw.h
 //
-#define TEST_TEMP_VALUE 20
+#define TEST_TEMP_VALUE 40
 // Set Arduino platform here
 //#define VM800B				// FTDI FT800 "Plus" board with AT328P (I/O 9 on SS#)
 #define ARDUINO					// Arduino Pro, Uno, etc. (I/O 10 on SS#)
@@ -38,6 +38,7 @@
 //unsigned int DS18B20_SAMPLE_INTERVAL = 600;
 //unsigned int nextUpdateTime;
 //unsigned int UPDATE_INTERVAL = 300;
+FT800 ft800 = FT800();
 double celsius;
 double fahrenheit;
 char pubString[15];
@@ -51,11 +52,11 @@ unsigned int shower_temp=38;
 // Global Variables
 
 // Arduino pins - others defined by Serial and SPI libraries
-unsigned int triggerPin;			// Used for oscilloscope/logic analyzer trigger
+/*unsigned int triggerPin;			// Used for oscilloscope/logic analyzer trigger
 unsigned int ft800irqPin;			// Interrupt from FT800 to Arduino - not used here
 unsigned int ft800pwrPin;			// PD_N from Arduino to FT800 - effectively FT800 reset
 unsigned int ft800csPin;			// SPI chip select - defined separately since it's manipulated with GPIO calls
-
+*/
 // LCD display parameters
 unsigned int lcdWidth;				// Active width of LCD display
 unsigned int lcdHeight;				// Active height of LCD display
@@ -93,10 +94,10 @@ void setup() {
     Particle.syncTime();
     pinMode(D2, INPUT);
     // need change
-    triggerPin = A0;				// Used for oscilloscope/logic analyzer trigger
-    ft800irqPin = D1;				// Interrupt from FT800 to Arduino - not used here
-    ft800pwrPin = D0;				// PD_N from Arduino to FT800 - effectively FT800 reset
-    ft800csPin  = DAC;				// SPI chip select - defined separately since it's manipulated with GPIO calls
+    //ft800.triggerPin = 2;				// Used for oscilloscope/logic analyzer trigger
+    ft800.ft800irqPin = A2;				// Interrupt from FT800 to Arduino - not used here
+    ft800.ft800pwrPin = A0;				// PD_N from Arduino to FT800 - effectively FT800 reset
+    ft800.ft800csPin  = DAC;				// SPI chip select - defined separately since it's manipulated with GPIO calls
 
     lcdWidth   = 480;				// Active width of LCD display
     lcdHeight  = 272;				// Active height of LCD display
@@ -112,77 +113,77 @@ void setup() {
     lcdSwizzle = 0;				// Define RGB output pins
     lcdPclkpol = 1;				// Define active edge of PCLK
 
-    SPI.begin(ft800csPin);					// Initialize SPI
+    SPI.begin(ft800.ft800csPin);					// Initialize SPI
     SPI.setBitOrder(MSBFIRST);			// Send data most significant bit first
     SPI.setDataMode(SPI_MODE0);			// Clock idle zero, clock data into FT800 on rising edge
     SPI.setClockDivider(SPI_CLOCK_DIV4);		// Set rate at 4MHz (16MHz OSC / 4)
 
-    pinMode(triggerPin, OUTPUT);			// Arduino pin used for oscilloscope triggering
-    pinMode(ft800irqPin, INPUT_PULLUP);		// FT800 interrupt output (not used in this example)
-    pinMode(ft800pwrPin, OUTPUT);			// FT800 Power Down (reset) input
-    pinMode(ft800csPin, OUTPUT);			// FT800 SPI bus CS# input
+    //pinMode(ft800.triggerPin, OUTPUT);			// Arduino pin used for oscilloscope triggering
+    pinMode(ft800.ft800irqPin, INPUT_PULLUP);		// FT800 interrupt output (not used in this example)
+    pinMode(ft800.ft800pwrPin, OUTPUT);			// FT800 Power Down (reset) input
+    pinMode(ft800.ft800csPin, OUTPUT);			// FT800 SPI bus CS# input
 
-    digitalWrite(triggerPin, LOW);		// Initialize the oscilloscope trigger
-    digitalWrite(ft800csPin, HIGH);		// Set CS# high to start - SPI inactive
-    digitalWrite(ft800pwrPin, HIGH);		// Set PD# high to start
+    //digitalWrite(ft800.triggerPin, LOW);		// Initialize the oscilloscope trigger
+    digitalWrite(ft800.ft800csPin, HIGH);		// Set CS# high to start - SPI inactive
+    digitalWrite(ft800.ft800pwrPin, HIGH);		// Set PD# high to start
     delay(20);					// Wait a few MS before waking the FT800
 
     //***************************************
 // Wake-up FT800
 
-    digitalWrite(ft800pwrPin, LOW);		// 1) lower PD#
+    digitalWrite(ft800.ft800pwrPin, LOW);		// 1) lower PD#
     delay(20);					// 2) hold for 20ms
-    digitalWrite(ft800pwrPin, HIGH);		// 3) raise PD#
+    digitalWrite(ft800.ft800pwrPin, HIGH);		// 3) raise PD#
     delay(20);					// 4) wait for another 20ms before sending any commands
 
-    ft800cmdWrite(FT800_ACTIVE);			// Start FT800
+    ft800.ft800cmdWrite(FT800_ACTIVE);			// Start FT800
     delay(5);					// Give some time to process
-    ft800cmdWrite(FT800_CLKEXT);			// Set FT800 for external clock
+    ft800.ft800cmdWrite(FT800_CLKEXT);			// Set FT800 for external clock
     delay(5);					// Give some time to process
-    ft800cmdWrite(FT800_CLK48M);			// Set FT800 for 48MHz PLL
+    ft800.ft800cmdWrite(FT800_CLK48M);			// Set FT800 for 48MHz PLL
     delay(5);					// Give some time to process
       					// Now FT800 can accept commands at up to 30MHz clock on SPI bus
       					//   This application leaves the SPI bus at 4MHz
 
-    if (ft800memRead8(REG_ID) != 0x7C)		// Read ID register - is it 0x7C?
+    if (ft800.ft800memRead8(REG_ID) != 0x7C)		// Read ID register - is it 0x7C?
     {
         Serial.write("System Halted!\r\n");		// Send an error message on the UART
         while(1);					// If we don't get 0x7C, the ineface isn't working - halt with infinite loop
     }
 
-    ft800memWrite8(REG_PCLK, ZERO);		// Set PCLK to zero - don't clock the LCD until later
-    ft800memWrite8(REG_PWM_DUTY, ZERO);		// Turn off backlight
+    ft800.ft800memWrite8(REG_PCLK, ZERO);		// Set PCLK to zero - don't clock the LCD until later
+    ft800.ft800memWrite8(REG_PWM_DUTY, ZERO);		// Turn off backlight
 
 // End of Wake-up FT800
 //***************************************
 
 //***************************************
 // Initialize Display
-    ft800memWrite16(REG_HSIZE,   lcdWidth);	// active display width
-    ft800memWrite16(REG_HCYCLE,  lcdHcycle);	// total number of clocks per line, incl front/back porch
-    ft800memWrite16(REG_HOFFSET, lcdHoffset);	// start of active line
-    ft800memWrite16(REG_HSYNC0,  lcdHsync0);	// start of horizontal sync pulse
-    ft800memWrite16(REG_HSYNC1,  lcdHsync1);	// end of horizontal sync pulse
-    ft800memWrite16(REG_VSIZE,   lcdHeight);	// active display height
-    ft800memWrite16(REG_VCYCLE,  lcdVcycle);	// total number of lines per screen, incl pre/post
-    ft800memWrite16(REG_VOFFSET, lcdVoffset);	// start of active screen
-    ft800memWrite16(REG_VSYNC0,  lcdVsync0);	// start of vertical sync pulse
-    ft800memWrite16(REG_VSYNC1,  lcdVsync1);	// end of vertical sync pulse
-    ft800memWrite8(REG_SWIZZLE,  lcdSwizzle);	// FT800 output to LCD - pin order
-    ft800memWrite8(REG_PCLK_POL, lcdPclkpol);	// LCD data is clocked in on this PCLK edge
-    ft800memWrite32(REG_ROTATE, 0);
+    ft800.ft800memWrite16(REG_HSIZE,   lcdWidth);	// active display width
+    ft800.ft800memWrite16(REG_HCYCLE,  lcdHcycle);	// total number of clocks per line, incl front/back porch
+    ft800.ft800memWrite16(REG_HOFFSET, lcdHoffset);	// start of active line
+    ft800.ft800memWrite16(REG_HSYNC0,  lcdHsync0);	// start of horizontal sync pulse
+    ft800.ft800memWrite16(REG_HSYNC1,  lcdHsync1);	// end of horizontal sync pulse
+    ft800.ft800memWrite16(REG_VSIZE,   lcdHeight);	// active display height
+    ft800.ft800memWrite16(REG_VCYCLE,  lcdVcycle);	// total number of lines per screen, incl pre/post
+    ft800.ft800memWrite16(REG_VOFFSET, lcdVoffset);	// start of active screen
+    ft800.ft800memWrite16(REG_VSYNC0,  lcdVsync0);	// start of vertical sync pulse
+    ft800.ft800memWrite16(REG_VSYNC1,  lcdVsync1);	// end of vertical sync pulse
+    ft800.ft800memWrite8(REG_SWIZZLE,  lcdSwizzle);	// FT800 output to LCD - pin order
+    ft800.ft800memWrite8(REG_PCLK_POL, lcdPclkpol);	// LCD data is clocked in on this PCLK edge
+    ft800.ft800memWrite32(REG_ROTATE, 0);
 						// Don't set PCLK yet - wait for just after the first display list
 // End of Initialize Display
 //***************************************
 
 //***************************************
 // Configure Touch and Audio - not used in this example, so disable both
-  ft800memWrite8(REG_TOUCH_MODE, ZERO);		// Disable touch
-  ft800memWrite16(REG_TOUCH_RZTHRESH, ZERO);	// Eliminate any false touches
+  ft800.ft800memWrite8(REG_TOUCH_MODE, ZERO);		// Disable touch
+  ft800.ft800memWrite16(REG_TOUCH_RZTHRESH, ZERO);	// Eliminate any false touches
 
-  ft800memWrite8(REG_VOL_PB, ZERO);		// turn recorded audio volume down
-  ft800memWrite8(REG_VOL_SOUND, ZERO);		// turn synthesizer volume down
-  ft800memWrite16(REG_SOUND, 0x6000);		// set synthesizer to mute
+  ft800.ft800memWrite8(REG_VOL_PB, ZERO);		// turn recorded audio volume down
+  ft800.ft800memWrite8(REG_VOL_SOUND, ZERO);		// turn synthesizer volume down
+  ft800.ft800memWrite16(REG_SOUND, 0x6000);		// set synthesizer to mute
 
 // End of Configure Touch and Audio
 //***************************************
@@ -191,23 +192,23 @@ void setup() {
 // Write Initial Display List & Enable Display
 
   ramDisplayList = RAM_DL;			// start of Display List
-  ft800memWrite32(ramDisplayList, DL_CLEAR_RGB); // Clear Color RGB   00000010 RRRRRRRR GGGGGGGG BBBBBBBB  (R/G/B = Colour values) default zero / black
+  ft800.ft800memWrite32(ramDisplayList, DL_CLEAR_RGB); // Clear Color RGB   00000010 RRRRRRRR GGGGGGGG BBBBBBBB  (R/G/B = Colour values) default zero / black
   ramDisplayList += 4;				// point to next location
-  ft800memWrite32(ramDisplayList, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));	// Clear 00100110 -------- -------- -----CST  (C/S/T define which parameters to clear)
+  ft800.ft800memWrite32(ramDisplayList, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));	// Clear 00100110 -------- -------- -----CST  (C/S/T define which parameters to clear)
   ramDisplayList += 4;				// point to next location
-  ft800memWrite32(ramDisplayList, DL_DISPLAY);	// DISPLAY command 00000000 00000000 00000000 00000000 (end of display list)
+  ft800.ft800memWrite32(ramDisplayList, DL_DISPLAY);	// DISPLAY command 00000000 00000000 00000000 00000000 (end of display list)
 
-  ft800memWrite32(REG_DLSWAP, DLSWAP_FRAME);	// 00000000 00000000 00000000 000000SS  (SS bits define when render occurs)
+  ft800.ft800memWrite32(REG_DLSWAP, DLSWAP_FRAME);	// 00000000 00000000 00000000 000000SS  (SS bits define when render occurs)
 						// Nothing is being displayed yet... the pixel clock is still 0x00
   ramDisplayList = RAM_DL;			// Reset Display List pointer for next list
 
-  ft800Gpio = ft800memRead8(REG_GPIO);		// Read the FT800 GPIO register for a read/modify/write operation
+  ft800Gpio = ft800.ft800memRead8(REG_GPIO);		// Read the FT800 GPIO register for a read/modify/write operation
   ft800Gpio = ft800Gpio | 0x80;			// set bit 7 of FT800 GPIO register (DISP) - others are inputs
-  ft800memWrite8(REG_GPIO, ft800Gpio);		// Enable the DISP signal to the LCD panel
-  ft800memWrite8(REG_PCLK, lcdPclk);		// Now start clocking data to the LCD panel
+  ft800.ft800memWrite8(REG_GPIO, ft800Gpio);		// Enable the DISP signal to the LCD panel
+  ft800.ft800memWrite8(REG_PCLK, lcdPclk);		// Now start clocking data to the LCD panel
   for(int duty = 0; duty <= 128; duty++)
   {
-    ft800memWrite8(REG_PWM_DUTY, duty);		// Turn on backlight - ramp up slowly to full brighness
+    ft800.ft800memWrite8(REG_PWM_DUTY, duty);		// Turn on backlight - ramp up slowly to full brighness
     delay(10);
   }
   //myTimer.begin(increment, 1000*30/91*2, hmSec);
@@ -233,8 +234,8 @@ void loop() {
   // This is a 4Kbyte ring buffer, so keep pointers within the 4K roll-over
   do
   {
-    cmdBufferRd = ft800memRead16(REG_CMD_READ);	// Read the graphics processor read pointer
-    cmdBufferWr = ft800memRead16(REG_CMD_WRITE); // Read the graphics processor write pointer
+    cmdBufferRd = ft800.ft800memRead16(REG_CMD_READ);	// Read the graphics processor read pointer
+    cmdBufferWr = ft800.ft800memRead16(REG_CMD_WRITE); // Read the graphics processor write pointer
   }while (cmdBufferWr != cmdBufferRd);		// Wait until the two registers match
 
   cmdOffset = cmdBufferWr;			// The new starting point the first location after the last command
@@ -246,7 +247,8 @@ void loop() {
     COLOR=color_target;
   }*/
   celsius = TEST_TEMP_VALUE;
-  color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
+  //color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
+  color_target = RED;
   COLOR=color_target;
  /* if(millis() >= nextUpdateTime){
       nextUpdateTime = millis() + (shower_time*1000*.5)/((120-29+5));
@@ -259,11 +261,11 @@ void loop() {
 
   /* Drawing begins */
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (CMD_DLSTART));
-  cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
+  /*ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_DLSTART));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
-  cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
+  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
 
   //ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR_RGB | BLACK));
   //cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
@@ -274,16 +276,16 @@ void loop() {
   //ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
   //cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR_RGB | COLOR));
-  cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
+  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR_RGB | (COLOR)));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
-  cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
-/* // This is the code for the temp reading
-  ft800memWrite32(RAM_CMD + cmdOffset, (CMD_NUMBER));
+  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+ // This is the code for the temp reading
+  /*ft800memWrite32(RAM_CMD + cmdOffset, (CMD_NUMBER));
   cmdOffset = incCMDOffset(cmdOffset, 4);
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (3*level));
+  ft800memWrite32(RAM_CMD + cmdOffset, (0));
   cmdOffset = incCMDOffset(cmdOffset, 2);
 
   ft800memWrite32(RAM_CMD + cmdOffset, (145));
@@ -295,42 +297,343 @@ void loop() {
   ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTERY));
   cmdOffset = incCMDOffset(cmdOffset, 2);	// Update the command pointer
 
-  ft800memWrite32(RAM_CMD + cmdOffset, ((int)(celsius)));
+  ft800memWrite32(RAM_CMD + cmdOffset, ((int)celsius));
   cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
-  */
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT ));
-  cmdOffset = incCMDOffset(cmdOffset, 4);
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (120));
-  cmdOffset = incCMDOffset(cmdOffset, 2);
+  /*ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (145));
-  cmdOffset = incCMDOffset(cmdOffset, 2);
+  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (0));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (31));
-  cmdOffset = incCMDOffset(cmdOffset, 2);	// Update the command pointer
+  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (0));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-  cmdOffset = incCMDOffset(cmdOffset, 2);	// Update the command pointer
+  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
 
-  if (celsius < plant_temp_min) {
-    ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+  /*if (celsius < plant_temp_min) {
+    ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
   } else if (celsius > plant_temp_max) {
-    ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+    ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
   } else {
-    ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-  }
-  cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
+    ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+  }*/
+/*  ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'h');
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+*/
+
+  /*ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_DISPLAY));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
 
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (DL_DISPLAY));
-  cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
+  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_SWAP));
+  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+  ft800.ft800memWrite16(REG_CMD_WRITE, (cmdOffset));	// Update the ring buffer pointer so the graphics processor starts executing
+				// Wait a half-second to observe the changing color*/
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_DLSTART));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR_RGB | COLOR));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_SCISSOR_SIZE | 480<<12 | 272));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR_RGB | COLOR));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        /*ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_NUMBER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (3*level));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTERY));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, ((int)(celsius)));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+        */
+        int pos = 3*level;
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        /*if (celsius < plant_temp_min) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        } else if (celsius > plant_temp_max) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+        } else {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+        }*/
+        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'i');
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +20));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        /*if (celsius < plant_temp_min) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        } else if (celsius > plant_temp_max) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+        } else {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+        }*/
+        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 't');
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +60));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        /*if (celsius < plant_temp_min) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        } else if (celsius > plant_temp_max) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+        } else {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+        }*/
+        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'i');
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +80));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        /*if (celsius < plant_temp_min) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        } else if (celsius > plant_temp_max) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+        } else {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+        }*/
+        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 's');
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos + 120));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        /*if (celsius < plant_temp_min) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        } else if (celsius > plant_temp_max) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+        } else {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+        }*/
+        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 't');
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +140));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        /*if (celsius < plant_temp_min) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        } else if (celsius > plant_temp_max) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+        } else {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+        }*/
+        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'o');
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +160));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        /*if (celsius < plant_temp_min) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        } else if (celsius > plant_temp_max) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+        } else {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+        }*/
+        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'o');
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +200));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        /*if (celsius < plant_temp_min) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        } else if (celsius > plant_temp_max) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+        } else {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+        }*/
+        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'h');
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +220));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        /*if (celsius < plant_temp_min) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        } else if (celsius > plant_temp_max) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+        } else {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+        }*/
+        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'o');
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos+240));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+        /*if (celsius < plant_temp_min) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        } else if (celsius > plant_temp_max) {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+        } else {
+          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
+        }*/
+        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 't');
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
 
 
-  ft800memWrite32(RAM_CMD + cmdOffset, (CMD_SWAP));
-  cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_DISPLAY));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
 
-  ft800memWrite16(REG_CMD_WRITE, (cmdOffset));	// Update the ring buffer pointer so the graphics processor starts executing
-				// Wait a half-second to observe the changing color
+
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_SWAP));
+        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+
+        ft800.ft800memWrite16(REG_CMD_WRITE, (cmdOffset));
 }

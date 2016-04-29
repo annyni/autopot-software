@@ -307,14 +307,36 @@
 #define ABS(x)               ((x) > (0) ? (x) : (-x))
 
 
-void ft800memWrite8(unsigned long ftAddress, unsigned char ftData8);
-void ft800memWrite16(unsigned long ftAddress, unsigned int ftData16);
-void ft800memWrite32(unsigned long ftAddress, unsigned long ftData32);
-unsigned char ft800memRead8(unsigned long ftAddress);
-unsigned int ft800memRead16(unsigned long ftAddress);
-unsigned long ft800memRead32(unsigned long ftAddress);
-void ft800cmdWrite(unsigned char ftCommand);
-unsigned int incCMDOffset(unsigned int currentOffset, unsigned char commandSize);
+class   FT800
+{
+    //OneWire oneWire;
+    //bool    present;
+    //bool    model_s;
+    //uint8_t data[12];
+    //uint8_t addr[8];
+    //float   toFloat(uint16_t word);
+  public:
 
+    //DS1820(PinName pin);
+    //DS1820(char model, PinName pin);
+    //bool   begin(void);
+    //bool   isPresent();
+    //void   setResolution(uint8_t res);
+    //void   startConversion(void);
+    //float  read(void);
+    FT800();
+    unsigned int triggerPin;			// Used for oscilloscope/logic analyzer trigger
+    unsigned int ft800irqPin;			// Interrupt from FT800 to Arduino - not used here
+    unsigned int ft800pwrPin;			// PD_N from Arduino to FT800 - effectively FT800 reset
+    unsigned int ft800csPin;			// SPI chip select - defined separately since it's manipulated with GPIO calls
+    void ft800memWrite8(unsigned long ftAddress, unsigned char ftData8);
+    void ft800memWrite16(unsigned long ftAddress, unsigned int ftData16);
+    void ft800memWrite32(unsigned long ftAddress, unsigned long ftData32);
+    unsigned char ft800memRead8(unsigned long ftAddress);
+    unsigned int ft800memRead16(unsigned long ftAddress);
+    unsigned long ft800memRead32(unsigned long ftAddress);
+    void ft800cmdWrite(unsigned char ftCommand);
+    unsigned int incCMDOffset(unsigned int currentOffset, unsigned char commandSize);
+};
 #endif  //FT800_h
 /** EOF FT800.h ********************************************************/

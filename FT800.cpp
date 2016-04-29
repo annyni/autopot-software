@@ -50,10 +50,6 @@
 // Global Variables
 
 // Arduino pins - others defined by Serial and SPI libraries
-unsigned int triggerPin;			// Used for oscilloscope/logic analyzer trigger
-unsigned int ft800irqPin;			// Interrupt from FT800 to Arduino - not used here
-unsigned int ft800pwrPin;			// PD_N from Arduino to FT800 - effectively FT800 reset
-unsigned int ft800csPin;			// SPI chip select - defined separately since it's manipulated with GPIO calls
 /*
 // LCD display parameters
 unsigned int lcdWidth;				// Active width of LCD display
@@ -82,6 +78,11 @@ unsigned long point_y = (136 * 16);		// Define a default point y-location (1/16 
 unsigned long color;				// Variable for chanign colors
 unsigned char ft800Gpio;			// Used for FT800 GPIO register
 */
+
+FT800::FT800(){
+
+}
+
 /******************************************************************************
  * Function:        void ft800memWritexx(ftAddress, ftDataxx, ftLength)
  * PreCondition:    None
@@ -92,7 +93,7 @@ unsigned char ft800Gpio;			// Used for FT800 GPIO register
  * Overview:        Writes FT800 internal address space
  * Note:            "xx" is one of 8, 16 or 32
  *****************************************************************************/
-void ft800memWrite8(unsigned long ftAddress, unsigned char ftData8)
+void FT800::ft800memWrite8(unsigned long ftAddress, unsigned char ftData8)
 {
   digitalWrite(ft800csPin, LOW);		// Set CS# low
   SPI.transfer((char)(ftAddress >> 16) | MEM_WRITE); // Send Memory Write plus high address byte
@@ -102,7 +103,7 @@ void ft800memWrite8(unsigned long ftAddress, unsigned char ftData8)
   digitalWrite(ft800csPin, HIGH);		// Set CS# high
 }
 
-void ft800memWrite16(unsigned long ftAddress, unsigned int ftData16)
+void FT800::ft800memWrite16(unsigned long ftAddress, unsigned int ftData16)
 {
 //  digitalWrite(triggerPin, HIGH);		// Toggle a pin to trigger the oscilloscope
 //  digitalWrite(triggerPin, LOW);		// Toggle a pin to trigger the oscilloscope
@@ -115,7 +116,7 @@ void ft800memWrite16(unsigned long ftAddress, unsigned int ftData16)
   digitalWrite(ft800csPin, HIGH);		// Set CS# high
 }
 
-void ft800memWrite32(unsigned long ftAddress, unsigned long ftData32)
+void FT800::ft800memWrite32(unsigned long ftAddress, unsigned long ftData32)
 {
   digitalWrite(ft800csPin, LOW);		// Set CS# low
   SPI.transfer((char)(ftAddress >> 16) | MEM_WRITE); // Send Memory Write plus high address byte
@@ -136,7 +137,7 @@ void ft800memWrite32(unsigned long ftAddress, unsigned long ftData32)
  * Overview:        Reads FT800 internal address space
  * Note:            "xx" is one of 8, 16 or 32
  *****************************************************************************/
-unsigned char ft800memRead8(unsigned long ftAddress)
+unsigned char FT800::ft800memRead8(unsigned long ftAddress)
 {
   unsigned char ftData8 = ZERO;
   digitalWrite(ft800csPin, LOW);		// Set CS# low
@@ -149,7 +150,7 @@ unsigned char ft800memRead8(unsigned long ftAddress)
   return ftData8;				// Return byte read
 }
 
-unsigned int ft800memRead16(unsigned long ftAddress)
+unsigned int FT800::ft800memRead16(unsigned long ftAddress)
 {
   unsigned int ftData16;
   digitalWrite(ft800csPin, LOW);		// Set CS# low
@@ -163,7 +164,7 @@ unsigned int ft800memRead16(unsigned long ftAddress)
   return ftData16;				// Return integer read
 }
 
-unsigned long ft800memRead32(unsigned long ftAddress)
+unsigned long FT800::ft800memRead32(unsigned long ftAddress)
 {
   unsigned long ftData32;
   digitalWrite(ft800csPin, LOW);		// Set CS# low
@@ -187,7 +188,7 @@ unsigned long ft800memRead32(unsigned long ftAddress)
  * Overview:        Sends FT800 command
  * Note:            None
  *****************************************************************************/
-void ft800cmdWrite(unsigned char ftCommand)
+void FT800::ft800cmdWrite(unsigned char ftCommand)
 {
   digitalWrite(ft800csPin, LOW);		// Set CS# low
   SPI.transfer(ftCommand);			// Send command
@@ -208,7 +209,7 @@ void ft800cmdWrite(unsigned char ftCommand)
  *                  Checks for 4K ring-buffer offset roll-over
  * Note:            None
  *****************************************************************************/
-unsigned int incCMDOffset(unsigned int currentOffset, unsigned char commandSize)
+unsigned int FT800::incCMDOffset(unsigned int currentOffset, unsigned char commandSize)
 {
     unsigned int newOffset;			// used to hold new offset
     newOffset = currentOffset + commandSize;	// Calculate new offset
