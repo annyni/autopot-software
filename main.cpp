@@ -4,7 +4,7 @@
 // Delcarations
 // Also see FT800_hw.h and FT800_sw.h
 //
-#define TEST_TEMP_VALUE 40
+#define TEST_TEMP_VALUE 30
 // Set Arduino platform here
 //#define VM800B				// FTDI FT800 "Plus" board with AT328P (I/O 9 on SS#)
 #define ARDUINO					// Arduino Pro, Uno, etc. (I/O 10 on SS#)
@@ -247,8 +247,7 @@ void loop() {
     COLOR=color_target;
   }*/
   celsius = TEST_TEMP_VALUE;
-  //color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
-  color_target = RED;
+  color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
   COLOR=color_target;
  /* if(millis() >= nextUpdateTime){
       nextUpdateTime = millis() + (shower_time*1000*.5)/((120-29+5));
@@ -260,83 +259,6 @@ void loop() {
   }*/
 
   /* Drawing begins */
-
-  /*ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_DLSTART));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-  //ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR_RGB | BLACK));
-  //cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-  //ft800memWrite32(RAM_CMD + cmdOffset, (DL_SCISSOR_SIZE | level<<12 | 480));
-  //cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-  //ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
-  //cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR_RGB | (COLOR)));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
- // This is the code for the temp reading
-  /*ft800memWrite32(RAM_CMD + cmdOffset, (CMD_NUMBER));
-  cmdOffset = incCMDOffset(cmdOffset, 4);
-
-  ft800memWrite32(RAM_CMD + cmdOffset, (0));
-  cmdOffset = incCMDOffset(cmdOffset, 2);
-
-  ft800memWrite32(RAM_CMD + cmdOffset, (145));
-  cmdOffset = incCMDOffset(cmdOffset, 2);
-
-  ft800memWrite32(RAM_CMD + cmdOffset, (31));
-  cmdOffset = incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-  ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTERY));
-  cmdOffset = incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-  ft800memWrite32(RAM_CMD + cmdOffset, ((int)celsius));
-  cmdOffset = incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-
-  /*ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (0));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (0));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-  /*if (celsius < plant_temp_min) {
-    ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
-  } else if (celsius > plant_temp_max) {
-    ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
-  } else {
-    ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-  }*/
-/*  ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'h');
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-*/
-
-  /*ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_DISPLAY));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-
-  ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_SWAP));
-  cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-  ft800.ft800memWrite16(REG_CMD_WRITE, (cmdOffset));	// Update the ring buffer pointer so the graphics processor starts executing
-				// Wait a half-second to observe the changing color*/
-
         ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_DLSTART));
         cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
 
@@ -376,257 +298,13 @@ void loop() {
         ft800.ft800memWrite32(RAM_CMD + cmdOffset, ((int)(celsius)));
         cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
         */
-        int pos = 3*level;
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        /*if (celsius < plant_temp_min) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
+        if (celsius < plant_temp_min) {
+          cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm cold! move me!", 10, 145, cmdOffset);
         } else if (celsius > plant_temp_max) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
+          cmdOffset = ft800.displayText(ft800, RAM_CMD, "it's too hot! help!", 10, 145, cmdOffset);
         } else {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-        }*/
-        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'i');
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +20));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        /*if (celsius < plant_temp_min) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
-        } else if (celsius > plant_temp_max) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
-        } else {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-        }*/
-        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 't');
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +60));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        /*if (celsius < plant_temp_min) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
-        } else if (celsius > plant_temp_max) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
-        } else {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-        }*/
-        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'i');
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +80));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        /*if (celsius < plant_temp_min) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
-        } else if (celsius > plant_temp_max) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
-        } else {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-        }*/
-        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 's');
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos + 120));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        /*if (celsius < plant_temp_min) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
-        } else if (celsius > plant_temp_max) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
-        } else {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-        }*/
-        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 't');
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +140));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        /*if (celsius < plant_temp_min) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
-        } else if (celsius > plant_temp_max) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
-        } else {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-        }*/
-        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'o');
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +160));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        /*if (celsius < plant_temp_min) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
-        } else if (celsius > plant_temp_max) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
-        } else {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-        }*/
-        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'o');
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +200));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        /*if (celsius < plant_temp_min) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
-        } else if (celsius > plant_temp_max) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
-        } else {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-        }*/
-        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'h');
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos +220));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        /*if (celsius < plant_temp_min) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
-        } else if (celsius > plant_temp_max) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
-        } else {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-        }*/
-        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 'o');
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_TEXT));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (pos+240));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        /*if (celsius < plant_temp_min) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm cold! move me! :S"));
-        } else if (celsius > plant_temp_max) {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("it's too hot! help! :()"));
-        } else {
-          ft800.ft800memWrite32(RAM_CMD + cmdOffset, (unsigned long)("i'm happy :)"));
-        }*/
-        ft800.ft800memWrite8(RAM_CMD + cmdOffset, 't');
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
+          cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm happy :)", 10, 145, cmdOffset);
+        }
 
         ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_DISPLAY));
         cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer

@@ -337,6 +337,7 @@ class   FT800
     unsigned long ft800memRead32(unsigned long ftAddress);
     void ft800cmdWrite(unsigned char ftCommand);
     unsigned int incCMDOffset(unsigned int currentOffset, unsigned char commandSize);
+    unsigned int displayText(FT800 ft800, unsigned long ftAddress, const char* text, unsigned int initX, unsigned int initY, unsigned int cmdOffset);
 };
 #endif  //FT800_h
 /** EOF FT800.h ********************************************************/

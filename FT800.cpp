@@ -220,6 +220,34 @@ unsigned int FT800::incCMDOffset(unsigned int currentOffset, unsigned char comma
     return newOffset;				// Return new offset
 }
 
+unsigned int FT800::displayText(FT800 ft800, unsigned long ftAddress, const char* text, unsigned int initX, unsigned int initY, unsigned int cmdOffset)
+{
+  int len = strlen(text);
+  for (int i = 0; i < len; i++)
+  {
+    char c = text[i];
+    ft800memWrite32(ftAddress + cmdOffset, (CMD_TEXT));
+    cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+
+    ft800.ft800memWrite32(ftAddress + cmdOffset, (initX+20));
+    cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+    ft800.ft800memWrite32(ftAddress + cmdOffset, (initY));
+    cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
+
+    ft800.ft800memWrite32(ftAddress + cmdOffset, (31));
+    cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+    ft800.ft800memWrite32(ftAddress + cmdOffset, (OPT_CENTER));
+    cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
+
+    ft800.ft800memWrite8(ftAddress + cmdOffset, c);
+    cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
+    initX += 20;
+  }
+  return cmdOffset;
+}
+
 /*void getTemp(){
     if(!ds18b20.search()){
       ds18b20.resetsearch();
