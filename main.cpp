@@ -2,6 +2,8 @@
 #include "FT800.h"
 #include "SparkIntervalTimer.h"
 #include "DS18B20.h"
+#include "AdaFruit_Sensor.h"
+#include "TSL2591.h"
 
 // Delcarations
 // Also see FT800_hw.h and FT800_sw.h
@@ -35,19 +37,29 @@
 //SYSTEM_MODE(MANUAL);
 
 IntervalTimer myTimer;
+
+// Sensors
 DS18B20 ds18b20 = DS18B20(D2);
 unsigned int DS18B20nextSampleTime;
 unsigned int DS18B20_SAMPLE_INTERVAL = 600;
 unsigned int nextUpdateTime;
 unsigned int UPDATE_INTERVAL = 300;
 FT800 ft800 = FT800();
+
+Adafruit_TSL2591 tsl2591 = Adafruit_TSL2591(2591);
+unsigned int TSL2591nextSampleTime;
+unsigned int TSL2591_SAMPLE_INTERVAL = 600;
+
 double celsius;
 double fahrenheit;
+uint16_t  tslIR;
+uint16_t  tslFull;
+uint32_t  tslLux;
 char pubString[15];
 unsigned int level=29;
 unsigned int COLOR=0x0091D3;
 unsigned int color_target=0x0091D3;
-unsigned int plant_temp_max= 38;
+unsigned int plant_temp_max= 33;
 unsigned int plant_temp_min= 23;
 unsigned int shower_time=30;
 unsigned int shower_temp=38;
@@ -92,6 +104,7 @@ void setup() {
     digitalWrite(P1S4,LOW);
     Time.zone(-4);
     DS18B20nextSampleTime=millis();
+    TSL2591nextSampleTime=millis();
     nextUpdateTime=millis();
     Particle.syncTime();
     pinMode(D2, INPUT);
@@ -216,7 +229,6 @@ void setup() {
   //myTimer.begin(increment, 1000*30/91*2, hmSec);
 // End of Write Initial Display List & Enable Display
 //***************************************
-
 }
 
 void increment() {
@@ -234,6 +246,16 @@ void getTemp(){
       DS18B20nextSampleTime = millis() + DS18B20_SAMPLE_INTERVAL;
       //Serial.println(fahrenheit);
     }
+}
+
+void getLight() {
+  if(!tsl2591.begin()) {
+    tsl2591.getReading();
+    tslLux= tsl2591.lux;
+    tslIR = tsl2591._ir;
+    tslFull = tsl2591._full;
+    TSL2591nextSampleTime = millis() + TSL2591_SAMPLE_INTERVAL;
+  }
 }
 
 void loop() {
@@ -256,6 +278,11 @@ void loop() {
     getTemp();
     color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
     COLOR=color_target;
+  }
+
+  if (millis() >= TSL2591nextSampleTime){
+    getLight();
+    Serial.println("Lux: " + tslLux +", Full: " + tslFull + ",IR: " + tslIR);
   }
   //celsius = TEST_TEMP_VALUE;
   //color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
