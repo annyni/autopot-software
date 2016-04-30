@@ -4,7 +4,7 @@
 #include "DS18B20.h"
 #include "AdaFruit_Sensor.h"
 #include "TSL2591.h"
-#include "CHIRP.h"
+//#include "CHIRP.h"
 #include "I2CSoilMoistureSensor.h"
 
 // Delcarations
@@ -13,11 +13,7 @@
 #define TEST_TEMP_VALUE 20
 
 // sensor declarations
-//#define TSL2591_CONN
-
-// Set Arduino platform here
-//#define VM800B				// FTDI FT800 "Plus" board with AT328P (I/O 9 on SS#)
-#define ARDUINO					// Arduino Pro, Uno, etc. (I/O 10 on SS#)
+#define TSL2591_CONN
 
 // FT800 Chip Commands - use with cmdWrite//
 #define FT800_ACTIVE	0x00			// Initializes FT800
@@ -42,6 +38,9 @@
 #define WHITE		0xFFFFFFUL		// White
 #define BLACK		0x000000UL		// Black
 
+#define enablePin P1S1
+#define phasePin  P1S2
+#define audioPin  P1S4
 //SYSTEM_MODE(MANUAL);
 
 IntervalTimer myTimer;
@@ -59,12 +58,12 @@ Adafruit_TSL2591 tsl2591 = Adafruit_TSL2591(2591);
 unsigned int TSL2591nextSampleTime;
 unsigned int TSL2591_SAMPLE_INTERVAL = 600;
 #endif
-
+/*
 CHIRP chirp = CHIRP();
 unsigned int chirpMoisture;
 unsigned int chirpTemp;
 unsigned int chirpLight;
-
+*/
 //I2CSoilMoistureSensor i2cChirp = I2CSoilMoistureSensor();
 
 double celsius;
@@ -78,32 +77,8 @@ unsigned int COLOR=0x0091D3;
 unsigned int color_target=0x0091D3;
 unsigned int plant_temp_max= 85;
 unsigned int plant_temp_min= 70;
-// Global Variables
+bool audioToggle=false;
 
-// Arduino pins - others defined by Serial and SPI libraries
-/*unsigned int triggerPin;			// Used for oscilloscope/logic analyzer trigger
-unsigned int ft800irqPin;			// Interrupt from FT800 to Arduino - not used here
-unsigned int ft800pwrPin;			// PD_N from Arduino to FT800 - effectively FT800 reset
-unsigned int ft800csPin;			// SPI chip select - defined separately since it's manipulated with GPIO calls
-*/
-// LCD display parameters
-/*unsigned int lcdWidth;				// Active width of LCD display
-unsigned int lcdHeight;				// Active height of LCD display
-unsigned int lcdHcycle;				// Total number of clocks per line
-unsigned int lcdHoffset;			// Start of active line
-unsigned int lcdHsync0;				// Start of horizontal sync pulse
-unsigned int lcdHsync1;				// End of horizontal sync pulse
-unsigned int lcdVcycle;				// Total number of lines per screen
-unsigned int lcdVoffset;			// Start of active screen
-unsigned int lcdVsync0;				// Start of vertical sync pulse
-unsigned int lcdVsync1;				// End of vertical sync pulse
-unsigned char lcdPclk;				// Pixel Clock
-unsigned char lcdSwizzle;			// Define RGB output pins
-unsigned char lcdPclkpol;			// Define active edge of PCLK
-
-unsigned long ramDisplayList = RAM_DL;		// Set beginning of display list memory
-unsigned long ramCommandBuffer = RAM_CMD;	// Set beginning of graphics command memory
-*/
 unsigned int cmdBufferRd = 0x0000;		// Used to navigate command ring buffer
 unsigned int cmdBufferWr = 0x0000;		// Used to navigate command ring buffer
 unsigned int cmdOffset = 0x0000;		// Used to navigate command rung buffer
@@ -114,9 +89,9 @@ unsigned long color;				// Variable for chanign colors
 //unsigned char ft800Gpio;			// Used for FT800 GPIO register
 
 // Particle variables
-double tempC = 0;
-unsigned int tempMin = plant_temp_min;
-unsigned int tempMax = plant_temp_max;
+double tempC;
+unsigned int tempMin;
+unsigned int tempMax;
 uint16_t lightFull1 = 0;
 //unsigned int lightFull2 = 0;
 unsigned int moistReading = 0;
@@ -124,32 +99,25 @@ unsigned int moistReading = 0;
 
 int recvTempMin(String m);
 int recvTempMax(String m);
+int toggleAudio(String m);
 
-int recvTempMin(String m){
-    tempMin = (unsigned int)atoi(m);
-    return 0;
-}
-
-int recvTempMax(String m) {
-    tempMax = (unsigned int)atoi(m);
-    return 0;
-}
-
-/*void increment() {
-    if(level>120)
-      level=29;
-      else
-      level++;
-}*/
 void setup() {
-
+    tempC = 0;
+    tempMin = plant_temp_min;
+    tempMax = plant_temp_max;
     //Particle.variable("messageSent", &messageSent, STRING);
     Serial.begin(9600);
-    Serial.println("Debugging====");
+    Serial.printf("Debugging====\n" );
     //i2cChirp.begin();
 
-    pinMode(P1S4, OUTPUT);
-    digitalWrite(P1S4,HIGH);
+    /* Set up for particle-webapp interaction */
+    Particle.function("sendTempMin", recvTempMin);
+    Particle.function("sendTempMax", recvTempMax);
+    Particle.function("toggleAudio", toggleAudio);
+    Particle.variable("getTemper", &tempC, DOUBLE);
+
+    pinMode(audioPin, OUTPUT);
+    digitalWrite(audioPin,LOW);
     Time.zone(-4);
     DS18B20nextSampleTime=millis();
     #ifdef TSL2591_CONN
@@ -186,12 +154,6 @@ void setup() {
     delay(20);					// 4) wait for another 20ms before sending any commands
     ft800.init(ft800);
 
-    //chirp.setup();
-
-    /* Set up for particle-webapp interaction */
-    Particle.function("sendTempMin", recvTempMin);
-    Particle.function("sendTempMax", recvTempMax);
-    Particle.variable("getTemper", &tempC, DOUBLE);
     //Particle.variable("getMoisture", &moistReading, INT);
     //Particle.variable("getLight1", &lightFull1, INT);
     //Particle.variable("getLight2", &lightFull2, INT);
@@ -201,27 +163,51 @@ void setup() {
     //uint16_t lightFull1 = 0;
     //unsigned int lightFull2 = 0;
     //unsigned int moistReading = 0;
-  }
+}
 
+
+int recvTempMin(String m){
+    Serial.println("initial tempmin msg:"+ m);
+    tempMin = (unsigned int)atoi(m);
+    Serial.println("tempMin received:" +tempMin);
+    return 0;
+}
+
+int recvTempMax(String m) {
+    Serial.println("initial tempmax msg:"+ m);
+    tempMax = (unsigned int)atoi(m);
+    Serial.println("tempMax received:"+ tempMax);
+    return 0;
+}
 
 void getTemper(){
     if(!ds18b20.search()){
       ds18b20.resetsearch();
       int check = ds18b20.getTemperature();
-      celsius = ds18b20.getTemperature();
-      fahrenheit = ds18b20.convertToFahrenheit(celsius);
-      tempC = fahrenheit;
+      if (check>0) {
+        celsius = check;
+        fahrenheit = ds18b20.convertToFahrenheit(celsius);
+        tempC = fahrenheit;
+      }
       DS18B20nextSampleTime = millis() + DS18B20_SAMPLE_INTERVAL;
       //Serial.println(fahrenheit);
     }
 }
 
+int toggleAudio(String m){
+  if(audioToggle==false)
+    digitalWrite(audioPin,HIGH);
+  else
+    digitalWrite(audioPin,LOW);
+  audioToggle=!audioToggle;
+  Serial.println("Audio On:" + audioToggle);
+  return 1;
+}
 
 // helper function for tsl2591
 #ifdef TSL2591_CONN
 void getLight() {
   if(tsl2591.begin()) {
-    Serial.println("inside");
     tsl2591.getReading();
     tslLux= tsl2591._lux;
     tslIR = tsl2591._ir;
@@ -280,6 +266,6 @@ void loop() {
   #endif
 
   /* Drawing begins */
-  ft800.draw(ft800, cmdOffset, COLOR, fahrenheit, plant_temp_min, plant_temp_max);
+  ft800.draw(ft800, cmdOffset, COLOR, fahrenheit, tempMin, tempMax);
 
 }
