@@ -111,10 +111,6 @@ uint16_t lightFull1 = 0;
 unsigned int moistReading = 0;
 //flow rate?
 
-
-Particle.function("sendTempMin", recvTempMin);
-Particle.function("sendTempMax", recvTempMax);
-
 void recvTempMin(int m) {
     tempMin = (unsigned int)m;
     return;
