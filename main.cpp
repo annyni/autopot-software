@@ -145,8 +145,9 @@ void setup() {
     Serial.begin(9600);
     Serial.println("Debugging====");
     //i2cChirp.begin();
+
     pinMode(P1S4, OUTPUT);
-    digitalWrite(P1S4,LOW);
+    digitalWrite(P1S4,HIGH);
     Time.zone(-4);
     DS18B20nextSampleTime=millis();
     #ifdef TSL2591_CONN
@@ -156,6 +157,11 @@ void setup() {
     Particle.syncTime();
     pinMode(D2, INPUT);
     //ft800.triggerPin = 2;				// Used for oscilloscope/logic analyzer trigger
+
+    pinMode(enablePin, INPUT);   //DRV8838 Motor Driver enable
+    pinMode(phasePin, OUTPUT);   //DRV8838 Motor Drive phase
+    digitalWrite(enablePin, LOW);
+    digitalWrite(phasePin, HIGH);
 
     SPI.begin(ft800.ft800csPin);					// Initialize SPI
     SPI.setBitOrder(MSBFIRST);			// Send data most significant bit first
@@ -178,6 +184,7 @@ void setup() {
     delay(20);					// 4) wait for another 20ms before sending any commands
     ft800.init(ft800);
 
+    //chirp.setup();
 
     /* Set up for particle-webapp interaction */
     Particle.function("sendTempMin", recvTempMin);
@@ -223,8 +230,7 @@ void getLight() {
 }
 #endif
 
-void getMoisture() {
-  chirp.setup();
+/*void getMoisture() {
     chirp.loop();
     chirpLight = chirp._light;
     chirpTemp = chirp._temp;
@@ -236,6 +242,13 @@ void getMoisture() {
   Serial.print(i2cChirp.getTemperature()/(float)10); //temperature register
   Serial.print(", Light: ");
   Serial.println(i2cChirp.getLight(true)); //request light measurement, wait and read light register*/
+//}
+
+void turnClockwise() {
+  digitalWrite(enablePin, HIGH);
+  delay(200);
+  digitalWrite(enablePin, LOW);
+  delay(100);
 }
 
 void loop() {
@@ -253,7 +266,7 @@ void loop() {
     COLOR=color_target;
   }
 
-  getMoisture();
+  //getMoisture();
 
   //Serial.printf("moisture: %d, temp: %d, light: %d \n", chirpMoisture, chirpTemp, chirpLight);
   // update tsl2591 light
