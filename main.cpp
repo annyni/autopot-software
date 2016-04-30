@@ -78,6 +78,7 @@ unsigned int color_target=0x0091D3;
 unsigned int plant_temp_max= 85;
 unsigned int plant_temp_min= 70;
 bool audioToggle=false;
+bool powerToggle=false;
 
 unsigned int cmdBufferRd = 0x0000;		// Used to navigate command ring buffer
 unsigned int cmdBufferWr = 0x0000;		// Used to navigate command ring buffer
@@ -96,12 +97,18 @@ uint16_t lightFull1 = 0;
 //unsigned int lightFull2 = 0;
 unsigned int moistReading = 0;
 //flow rate?
+bool hasSlept = false;
 
 int recvTempMin(String m);
 int recvTempMax(String m);
 int toggleAudio(String m);
+int togglePower(String m);
+int waterPlant(String m);
+int naP(String m);
+void turnClockwise();
 
 void setup() {
+    pinMode(WKP,INPUT);
     tempC = 0;
     tempMin = plant_temp_min;
     tempMax = plant_temp_max;
@@ -114,10 +121,15 @@ void setup() {
     Particle.function("sendTempMin", recvTempMin);
     Particle.function("sendTempMax", recvTempMax);
     Particle.function("toggleAudio", toggleAudio);
+    Particle.function("togglePower", togglePower);
+    Particle.function("waterPlant", waterPlant);
+    Particle.function("naP",naP);
     Particle.variable("getTemper", &tempC, DOUBLE);
 
     pinMode(audioPin, OUTPUT);
     digitalWrite(audioPin,LOW);
+    pinMode(D7,OUTPUT);
+    digitalWrite(D7,LOW);
     Time.zone(-4);
     DS18B20nextSampleTime=millis();
     #ifdef TSL2591_CONN
@@ -131,7 +143,7 @@ void setup() {
     pinMode(enablePin, INPUT);   //DRV8838 Motor Driver enable
     pinMode(phasePin, OUTPUT);   //DRV8838 Motor Drive phase
     digitalWrite(enablePin, LOW);
-    digitalWrite(phasePin, HIGH);
+    digitalWrite(phasePin, LOW);
 
     SPI.begin(ft800.ft800csPin);					// Initialize SPI
     SPI.setBitOrder(MSBFIRST);			// Send data most significant bit first
@@ -204,6 +216,32 @@ int toggleAudio(String m){
   return 1;
 }
 
+int togglePower(String m){
+  if(powerToggle==false)
+    digitalWrite(D7, HIGH);
+  else
+    digitalWrite(D7, LOW);
+  powerToggle=!powerToggle;
+  Serial.println("Power Toggled");
+  return 1;
+}
+
+int waterPlant(String m){
+  turnClockwise();
+  Serial.println("water :D");
+  return 1;
+}
+
+int naP(String m){
+  togglePower("LOL");
+  ft800.black(ft800);
+  //ft800.draw(ft800, cmdOffset, BLACK, fahrenheit, tempMin, tempMax);
+  digitalWrite(A0,LOW);
+  hasSlept=true;
+  System.sleep(WKP,CHANGE,15);
+  return 1;
+}
+
 // helper function for tsl2591
 #ifdef TSL2591_CONN
 void getLight() {
@@ -233,13 +271,18 @@ void getLight() {
 //}
 
 void turnClockwise() {
-  digitalWrite(enablePin, HIGH);
-  delay(200);
-  digitalWrite(enablePin, LOW);
-  delay(100);
+  digitalWrite(phasePin, HIGH);
+  delay(4000);
+  digitalWrite(phasePin, LOW);
 }
 
 void loop() {
+  if(hasSlept)
+  {
+    setup();
+    hasSlept = false;
+  }
+
   do
   {
     cmdBufferRd = ft800.ft800memRead16(REG_CMD_READ);	// Read the graphics processor read pointer

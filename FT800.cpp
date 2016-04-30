@@ -414,3 +414,11 @@ void FT800::draw(FT800 ft800, unsigned int cmdOffset, unsigned int COLOR, double
 
   ft800.ft800memWrite16(REG_CMD_WRITE, (cmdOffset));
 }
+void FT800::black(FT800 ft800)
+{
+  for(int duty = 128; duty >0; duty--)
+  {
+    ft800.ft800memWrite8(REG_PWM_DUTY, duty);
+    delay(1);
+  }
+}
