@@ -65,8 +65,8 @@ char pubString[15];
 unsigned int level=29;
 unsigned int COLOR=0x0091D3;
 unsigned int color_target=0x0091D3;
-unsigned int plant_temp_max= 33;
-unsigned int plant_temp_min= 23;
+unsigned int plant_temp_max= 85;
+unsigned int plant_temp_min= 70;
 // Global Variables
 
 // Arduino pins - others defined by Serial and SPI libraries
@@ -102,7 +102,29 @@ unsigned long point_y = (136 * 16);		// Define a default point y-location (1/16 
 unsigned long color;				// Variable for chanign colors
 //unsigned char ft800Gpio;			// Used for FT800 GPIO register
 
-String messageSent = "";
+// Particle variables
+double tempC = 0;
+unsigned int tempMin = plant_temp_min;
+unsigned int tempMax = plant_temp_max;
+uint16_t lightFull1 = 0;
+//unsigned int lightFull2 = 0;
+unsigned int moistReading = 0;
+//flow rate?
+
+
+Particle.function("sendTempMin", recvTempMin);
+Particle.function("sendTempMax", recvTempMax);
+
+void recvTempMin(int m) {
+    tempMin = (unsigned int)m;
+    return;
+}
+
+void recvTempMax(int m) {
+    tempMax = (unsigned int)m;
+    return;
+}
+
 /*void increment() {
     if(level>120)
       level=29;
@@ -146,6 +168,21 @@ void setup() {
     digitalWrite(ft800.ft800pwrPin, HIGH);		// 3) raise PD#
     delay(20);					// 4) wait for another 20ms before sending any commands
     ft800.init(ft800);
+
+
+    /* Set up for particle-webapp interaction */
+    Particle.function("sendTempMin", recvTempMin);
+    Particle.function("sendTempMax", recvTempMax);
+    Particle.variable("getTemp", &tempC, DOUBLE);
+    //Particle.variable("getMoisture", &moistReading, INT);
+    //Particle.variable("getLight1", &lightFull1, INT);
+    //Particle.variable("getLight2", &lightFull2, INT);
+
+    //unsigned int tempMin = 0;
+    //unsigned int tempMax = 0;
+    //uint16_t lightFull1 = 0;
+    //unsigned int lightFull2 = 0;
+    //unsigned int moistReading = 0;
   }
 
 
@@ -154,6 +191,7 @@ void getTemp(){
       ds18b20.resetsearch();
       celsius = ds18b20.getTemperature();
       fahrenheit = ds18b20.convertToFahrenheit(celsius);
+      tempC = fahrenheit;
       DS18B20nextSampleTime = millis() + DS18B20_SAMPLE_INTERVAL;
       //Serial.println(fahrenheit);
     }
@@ -169,6 +207,7 @@ void getLight() {
     tslLux= tsl2591._lux;
     tslIR = tsl2591._ir;
     tslFull = tsl2591._full;
+    lightFull1 = (uint16_t)tslFull;
     TSL2591nextSampleTime = millis() + TSL2591_SAMPLE_INTERVAL;
   }
 }
@@ -185,7 +224,7 @@ void loop() {
 
   if (millis() >= DS18B20nextSampleTime){
     getTemp();
-    color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
+    color_target = fahrenheit<tempMin?0x99ccff:(fahrenheit>tempMax?0xff3300:0x1aff1a);
     COLOR=color_target;
   }
 
@@ -198,6 +237,6 @@ void loop() {
   #endif
 
   /* Drawing begins */
-  ft800.draw(ft800, cmdOffset, COLOR, celsius, plant_temp_min, plant_temp_max);
+  ft800.draw(ft800, cmdOffset, COLOR, fahrenheit, plant_temp_min, plant_temp_max);
 
 }

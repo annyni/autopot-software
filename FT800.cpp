@@ -398,11 +398,11 @@ void FT800::draw(FT800 ft800, unsigned int cmdOffset, unsigned int COLOR, double
   cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
 
   if (celsius < plant_temp_min) {
-    cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm cold! move me! :S", 10, 145, cmdOffset);
+    cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm cold! move me! >.<", 10, 145, cmdOffset);
   } else if (celsius > plant_temp_max) {
-    cmdOffset = ft800.displayText(ft800, RAM_CMD, "it's too hot! help! :(", 10, 145, cmdOffset);
+    cmdOffset = ft800.displayText(ft800, RAM_CMD, "it's too hot! help! ~_~", 10, 145, cmdOffset);
   } else {
-    cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm happy :)", 10, 145, cmdOffset);
+    cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm happy! ^_^", 10, 145, cmdOffset);
   }
 
   ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_DISPLAY));
