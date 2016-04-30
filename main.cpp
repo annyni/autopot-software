@@ -1,10 +1,12 @@
 #include "application.h"
 #include "FT800.h"
+#include "SparkIntervalTimer.h"
+#include "DS18B20.h"
 
 // Delcarations
 // Also see FT800_hw.h and FT800_sw.h
 //
-#define TEST_TEMP_VALUE 30
+#define TEST_TEMP_VALUE 20
 // Set Arduino platform here
 //#define VM800B				// FTDI FT800 "Plus" board with AT328P (I/O 9 on SS#)
 #define ARDUINO					// Arduino Pro, Uno, etc. (I/O 10 on SS#)
@@ -32,12 +34,12 @@
 
 //SYSTEM_MODE(MANUAL);
 
-//IntervalTimer myTimer;
-//DS18B20 ds18b20 = DS18B20(D2);
-//unsigned int DS18B20nextSampleTime;
-//unsigned int DS18B20_SAMPLE_INTERVAL = 600;
-//unsigned int nextUpdateTime;
-//unsigned int UPDATE_INTERVAL = 300;
+IntervalTimer myTimer;
+DS18B20 ds18b20 = DS18B20(D2);
+unsigned int DS18B20nextSampleTime;
+unsigned int DS18B20_SAMPLE_INTERVAL = 600;
+unsigned int nextUpdateTime;
+unsigned int UPDATE_INTERVAL = 300;
 FT800 ft800 = FT800();
 double celsius;
 double fahrenheit;
@@ -89,8 +91,8 @@ void setup() {
     pinMode(P1S4, OUTPUT);
     digitalWrite(P1S4,LOW);
     Time.zone(-4);
-    //DS18B20nextSampleTime=millis();
-    //nextUpdateTime=millis();
+    DS18B20nextSampleTime=millis();
+    nextUpdateTime=millis();
     Particle.syncTime();
     pinMode(D2, INPUT);
     // need change
@@ -224,6 +226,16 @@ void increment() {
       level++;
 }
 
+void getTemp(){
+    if(!ds18b20.search()){
+      ds18b20.resetsearch();
+      celsius = ds18b20.getTemperature();
+      fahrenheit = ds18b20.convertToFahrenheit(celsius);
+      DS18B20nextSampleTime = millis() + DS18B20_SAMPLE_INTERVAL;
+      //Serial.println(fahrenheit);
+    }
+}
+
 void loop() {
      //sprintf(pubString,"{\"t\":%d,\"g\":%d}",24,5);
     //Particle.publish("DATA",pubString);
@@ -240,15 +252,14 @@ void loop() {
 
   cmdOffset = cmdBufferWr;			// The new starting point the first location after the last command
 
-  /*if (millis() >= DS18B20nextSampleTime){
+  if (millis() >= DS18B20nextSampleTime){
     getTemp();
-    //color_target=celsius>shower_temp?0xF51Df1:0x0091D3;
     color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
     COLOR=color_target;
-  }*/
-  celsius = TEST_TEMP_VALUE;
-  color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
-  COLOR=color_target;
+  }
+  //celsius = TEST_TEMP_VALUE;
+  //color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
+  //COLOR=color_target;
  /* if(millis() >= nextUpdateTime){
       nextUpdateTime = millis() + (shower_time*1000*.5)/((120-29+5));
       if(level>120)
@@ -280,13 +291,13 @@ void loop() {
         ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
         cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
 
-        /*ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_NUMBER));
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_NUMBER));
         cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
 
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (3*level));
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (20));
         cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
 
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (145));
+        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (90));
         cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
 
         ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
@@ -297,11 +308,11 @@ void loop() {
 
         ft800.ft800memWrite32(RAM_CMD + cmdOffset, ((int)(celsius)));
         cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-        */
+
         if (celsius < plant_temp_min) {
-          cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm cold! move me!", 10, 145, cmdOffset);
+          cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm cold! move me! :S", 10, 145, cmdOffset);
         } else if (celsius > plant_temp_max) {
-          cmdOffset = ft800.displayText(ft800, RAM_CMD, "it's too hot! help!", 10, 145, cmdOffset);
+          cmdOffset = ft800.displayText(ft800, RAM_CMD, "it's too hot! help! :(", 10, 145, cmdOffset);
         } else {
           cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm happy :)", 10, 145, cmdOffset);
         }
