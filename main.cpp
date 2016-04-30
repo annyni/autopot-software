@@ -182,7 +182,7 @@ void setup() {
     /* Set up for particle-webapp interaction */
     Particle.function("sendTempMin", recvTempMin);
     Particle.function("sendTempMax", recvTempMax);
-    Particle.variable("getTemp", &tempC, DOUBLE);
+    Particle.variable("getTemper", &tempC, DOUBLE);
     //Particle.variable("getMoisture", &moistReading, INT);
     //Particle.variable("getLight1", &lightFull1, INT);
     //Particle.variable("getLight2", &lightFull2, INT);
@@ -195,7 +195,7 @@ void setup() {
   }
 
 
-void getTemp(){
+void getTemper(){
     if(!ds18b20.search()){
       ds18b20.resetsearch();
       int check = ds18b20.getTemperature();
@@ -223,20 +223,20 @@ void getLight() {
 }
 #endif
 
-/*void getMoisture() {
+void getMoisture() {
   chirp.setup();
     chirp.loop();
     chirpLight = chirp._light;
     chirpTemp = chirp._temp;
     chirpMoisture = chirp._cap;
-*/
+
 /*    Serial.print("Soil Moisture Capacitance: ");
   Serial.print(i2cChirp.getCapacitance()); //read capacitance register
   Serial.print(", Temperature: ");
   Serial.print(i2cChirp.getTemperature()/(float)10); //temperature register
   Serial.print(", Light: ");
   Serial.println(i2cChirp.getLight(true)); //request light measurement, wait and read light register*/
-//}
+}
 
 void loop() {
   do
@@ -248,12 +248,12 @@ void loop() {
   cmdOffset = cmdBufferWr;			// The new starting point the first location after the last command
 
   if (millis() >= DS18B20nextSampleTime){
-    getTemp();
+    getTemper();
     color_target = fahrenheit<tempMin?0x99ccff:(fahrenheit>tempMax?0xff3300:0x1aff1a);
     COLOR=color_target;
   }
 
-  //getMoisture();
+  getMoisture();
 
   //Serial.printf("moisture: %d, temp: %d, light: %d \n", chirpMoisture, chirpTemp, chirpLight);
   // update tsl2591 light
