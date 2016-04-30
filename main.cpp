@@ -262,6 +262,6 @@ void loop() {
   #endif
 
   /* Drawing begins */
-  ft800.draw(ft800, cmdOffset, COLOR, fahrenheit, plant_temp_min, plant_temp_max);
+  ft800.draw(ft800, cmdOffset, COLOR, fahrenheit, tempMin, tempMax);
 
 }
