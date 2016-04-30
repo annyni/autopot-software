@@ -167,11 +167,6 @@ void getLight() {
 void loop() {
      //sprintf(pubString,"{\"t\":%d,\"g\":%d}",24,5);
     //Particle.publish("DATA",pubString);
-  // Wait for graphics processor to complete executing the current command list
-  // This happens when REG_CMD_READ matches REG_CMD_WRITE, indicating that all commands
-  // have been executed.  The next commands get executed when REG_CMD_WRITE is updated again...
-  // then REG_CMD_READ again catches up to REG_CMD_WRITE
-  // This is a 4Kbyte ring buffer, so keep pointers within the 4K roll-over
   do
   {
     cmdBufferRd = ft800.ft800memRead16(REG_CMD_READ);	// Read the graphics processor read pointer
@@ -190,9 +185,6 @@ void loop() {
     getLight();
     Serial.printf("Lux: %d, Full: %d, IR: %d \n", tslLux, tslFull, tslIR);
   }
-  //celsius = TEST_TEMP_VALUE;
-  //color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
-  //COLOR=color_target;
  /* if(millis() >= nextUpdateTime){
       nextUpdateTime = millis() + (shower_time*1000*.5)/((120-29+5));
       if(level>120)
