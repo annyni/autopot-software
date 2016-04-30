@@ -29,6 +29,8 @@
 #define FT800_CLK36M	0x61			// Select 36MHz PLL
 #define FT800_CORERST	0x68			// Reset core - all registers default
 
+#define enablePin P1S1
+#define phasePin P1S2
 // FT800 Memory Commands - use with ft800memWritexx and ft800memReadxx
 #define MEM_WRITE	0x80			// FT800 Host Memory Write
 #define MEM_READ	0x00			// FT800 Host Memory Read
