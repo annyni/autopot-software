@@ -137,12 +137,14 @@ void setup() {
     Serial.begin(9600);
     Serial.println("Debugging====");
     //i2cChirp.begin();
+
     /* Set up for particle-webapp interaction */
     Particle.function("sendTempMin", recvTempMin);
     Particle.function("sendTempMax", recvTempMax);
     Particle.variable("getTemper", &tempC, DOUBLE);
+
     pinMode(P1S4, OUTPUT);
-    digitalWrite(P1S4,LOW);
+    digitalWrite(P1S4,HIGH);
     Time.zone(-4);
     DS18B20nextSampleTime=millis();
     #ifdef TSL2591_CONN
@@ -152,6 +154,11 @@ void setup() {
     Particle.syncTime();
     pinMode(D2, INPUT);
     //ft800.triggerPin = 2;				// Used for oscilloscope/logic analyzer trigger
+
+    pinMode(enablePin, INPUT);   //DRV8838 Motor Driver enable
+    pinMode(phasePin, OUTPUT);   //DRV8838 Motor Drive phase
+    digitalWrite(enablePin, LOW);
+    digitalWrite(phasePin, HIGH);
 
     SPI.begin(ft800.ft800csPin);					// Initialize SPI
     SPI.setBitOrder(MSBFIRST);			// Send data most significant bit first
@@ -202,7 +209,7 @@ int recvTempMax(String m) {
     return 0;
 }
 
-void getTemp(){
+void getTemper(){
     if(!ds18b20.search()){
       ds18b20.resetsearch();
       int check = ds18b20.getTemperature();
@@ -231,12 +238,11 @@ void getLight() {
 #endif
 
 /*void getMoisture() {
-  chirp.setup();
     chirp.loop();
     chirpLight = chirp._light;
     chirpTemp = chirp._temp;
     chirpMoisture = chirp._cap;
-*/
+
 /*    Serial.print("Soil Moisture Capacitance: ");
   Serial.print(i2cChirp.getCapacitance()); //read capacitance register
   Serial.print(", Temperature: ");
@@ -244,6 +250,13 @@ void getLight() {
   Serial.print(", Light: ");
   Serial.println(i2cChirp.getLight(true)); //request light measurement, wait and read light register*/
 //}
+
+void turnClockwise() {
+  digitalWrite(enablePin, HIGH);
+  delay(200);
+  digitalWrite(enablePin, LOW);
+  delay(100);
+}
 
 void loop() {
   do
@@ -255,7 +268,7 @@ void loop() {
   cmdOffset = cmdBufferWr;			// The new starting point the first location after the last command
 
   if (millis() >= DS18B20nextSampleTime){
-    getTemp();
+    getTemper();
     color_target = fahrenheit<tempMin?0x99ccff:(fahrenheit>tempMax?0xff3300:0x1aff1a);
     COLOR=color_target;
   }
