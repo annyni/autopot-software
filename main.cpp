@@ -4,6 +4,8 @@
 #include "DS18B20.h"
 #include "AdaFruit_Sensor.h"
 #include "TSL2591.h"
+#include "CHIRP.h"
+#include "I2CSoilMoistureSensor.h"
 
 // Delcarations
 // Also see FT800_hw.h and FT800_sw.h
@@ -55,6 +57,13 @@ Adafruit_TSL2591 tsl2591 = Adafruit_TSL2591(2591);
 unsigned int TSL2591nextSampleTime;
 unsigned int TSL2591_SAMPLE_INTERVAL = 600;
 #endif
+
+CHIRP chirp = CHIRP();
+unsigned int chirpMoisture;
+unsigned int chirpTemp;
+unsigned int chirpLight;
+
+//I2CSoilMoistureSensor i2cChirp = I2CSoilMoistureSensor();
 
 double celsius;
 double fahrenheit;
@@ -114,6 +123,7 @@ void setup() {
     //Particle.variable("messageSent", &messageSent, STRING);
     Serial.begin(9600);
     Serial.println("Debugging====");
+    //i2cChirp.begin();
     pinMode(P1S4, OUTPUT);
     digitalWrite(P1S4,LOW);
     Time.zone(-4);
@@ -174,6 +184,21 @@ void getLight() {
 }
 #endif
 
+void getMoisture() {
+  chirp.setup();
+    chirp.loop();
+    chirpLight = chirp._light;
+    chirpTemp = chirp._temp;
+    chirpMoisture = chirp._cap;
+
+/*    Serial.print("Soil Moisture Capacitance: ");
+  Serial.print(i2cChirp.getCapacitance()); //read capacitance register
+  Serial.print(", Temperature: ");
+  Serial.print(i2cChirp.getTemperature()/(float)10); //temperature register
+  Serial.print(", Light: ");
+  Serial.println(i2cChirp.getLight(true)); //request light measurement, wait and read light register*/
+}
+
 void loop() {
   do
   {
@@ -189,6 +214,9 @@ void loop() {
     COLOR=color_target;
   }
 
+  getMoisture();
+
+  Serial.printf("moisture: %d, temp: %d, light: %d \n", chirpMoisture, chirpTemp, chirpLight);
   // update tsl2591 light
   #ifdef TSL2591_CONN
   if (millis() >= TSL2591nextSampleTime){
