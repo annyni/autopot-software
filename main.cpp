@@ -219,13 +219,13 @@ void getLight() {
 }
 #endif
 
-void getMoisture() {
+/*void getMoisture() {
   chirp.setup();
     chirp.loop();
     chirpLight = chirp._light;
     chirpTemp = chirp._temp;
     chirpMoisture = chirp._cap;
-
+*/
 /*    Serial.print("Soil Moisture Capacitance: ");
   Serial.print(i2cChirp.getCapacitance()); //read capacitance register
   Serial.print(", Temperature: ");
@@ -249,9 +249,9 @@ void loop() {
     COLOR=color_target;
   }
 
-  getMoisture();
+  //getMoisture();
 
-  Serial.printf("moisture: %d, temp: %d, light: %d \n", chirpMoisture, chirpTemp, chirpLight);
+  //Serial.printf("moisture: %d, temp: %d, light: %d \n", chirpMoisture, chirpTemp, chirpLight);
   // update tsl2591 light
   #ifdef TSL2591_CONN
   if (millis() >= TSL2591nextSampleTime){
