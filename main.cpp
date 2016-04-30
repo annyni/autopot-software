@@ -112,9 +112,9 @@ unsigned long color;				// Variable for chanign colors
 //unsigned char ft800Gpio;			// Used for FT800 GPIO register
 
 // Particle variables
-double tempC = 0;
-unsigned int tempMin = plant_temp_min;
-unsigned int tempMax = plant_temp_max;
+double tempC;
+unsigned int tempMin;
+unsigned int tempMax;
 uint16_t lightFull1 = 0;
 //unsigned int lightFull2 = 0;
 unsigned int moistReading = 0;
@@ -123,16 +123,6 @@ unsigned int moistReading = 0;
 int recvTempMin(String m);
 int recvTempMax(String m);
 
-int recvTempMin(String m){
-    tempMin = (unsigned int)atoi(m);
-    return 0;
-}
-
-int recvTempMax(String m) {
-    tempMax = (unsigned int)atoi(m);
-    return 0;
-}
-
 /*void increment() {
     if(level>120)
       level=29;
@@ -140,11 +130,17 @@ int recvTempMax(String m) {
       level++;
 }*/
 void setup() {
-
+    tempC = 0;
+    tempMin = plant_temp_min;
+    tempMax = plant_temp_max;
     //Particle.variable("messageSent", &messageSent, STRING);
     Serial.begin(9600);
     Serial.println("Debugging====");
     //i2cChirp.begin();
+    /* Set up for particle-webapp interaction */
+    Particle.function("sendTempMin", recvTempMin);
+    Particle.function("sendTempMax", recvTempMax);
+    Particle.variable("getTemper", &tempC, DOUBLE);
     pinMode(P1S4, OUTPUT);
     digitalWrite(P1S4,LOW);
     Time.zone(-4);
@@ -178,11 +174,6 @@ void setup() {
     delay(20);					// 4) wait for another 20ms before sending any commands
     ft800.init(ft800);
 
-
-    /* Set up for particle-webapp interaction */
-    Particle.function("sendTempMin", recvTempMin);
-    Particle.function("sendTempMax", recvTempMax);
-    Particle.variable("getTemp", &tempC, DOUBLE);
     //Particle.variable("getMoisture", &moistReading, INT);
     //Particle.variable("getLight1", &lightFull1, INT);
     //Particle.variable("getLight2", &lightFull2, INT);
@@ -192,8 +183,24 @@ void setup() {
     //uint16_t lightFull1 = 0;
     //unsigned int lightFull2 = 0;
     //unsigned int moistReading = 0;
-  }
+}
 
+
+int recvTempMin(String m){
+    Serial.println("initial tempmin msg:" + m);
+    tempMin = (unsigned int)atoi(m);
+    Serial.println("tempMin received:");
+    Serial.println(tempMin);
+    return 0;
+}
+
+int recvTempMax(String m) {
+    Serial.println("initial tempmax msg:" + m);
+    tempMax = (unsigned int)atoi(m);
+    Serial.println("tempMax received:");
+    Serial.println(tempMax);
+    return 0;
+}
 
 void getTemp(){
     if(!ds18b20.search()){
