@@ -183,7 +183,7 @@ class Adafruit_TSL2591 : public Adafruit_Sensor
   uint16_t           _ir;
   uint16_t           _full;
   //uint16_t           _visible;
-  uint32_t           lux;
+  uint32_t           _lux;
 
  private:
   tsl2591IntegrationTime_t _integration;

@@ -83,7 +83,7 @@ boolean Adafruit_TSL2591::begin(void)
   uint8_t id = read8(TSL2591_COMMAND_BIT | TSL2591_REGISTER_DEVICE_ID);
   if (id == 0x50 )
   {
-     // Serial.println("Found Adafruit_TSL2591");
+      //Serial.println("Found Adafruit_TSL2591");
   }
   else
   {
@@ -240,7 +240,7 @@ uint32_t Adafruit_TSL2591::calculateLux(uint16_t ch0, uint16_t ch1)
 
   // The highest value is the approximate lux equivalent
   lux3 = lux1 > lux2 ? lux1 : lux2;
-  lux = (uint32_t)lux3;
+  _lux = (uint32_t)lux3;
   // Signal I2C had no errors
   return (uint32_t)lux3;
 }
@@ -502,14 +502,14 @@ bool Adafruit_TSL2591::getReading()
 {
   uint16_t ir, full;
   uint32_t lum = getFullLuminosity();
-  /* Early silicon seems to have issues when there is a sudden jump in */
-  /* light levels. :( To work around this for now sample the sensor 2x */
   lum = getFullLuminosity();
+  Serial.printf("lum in reading %d \r\n", lum);
   ir = lum >> 16;
   full = lum & 0xFFFF;
   _ir = ir;
   _full = full;
-  calculateLux(full, ir);
+  _lux = calculateLux(full, ir);
+  Serial.printf("lux in reading %d \r\n", _lux);
 
   return true;
 }

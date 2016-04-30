@@ -98,8 +98,19 @@ unsigned long point_y = (136 * 16);		// Define a default point y-location (1/16 
 unsigned long color;				// Variable for chanign colors
 unsigned char ft800Gpio;			// Used for FT800 GPIO register
 
-
+String messageSent = "";
+void increment() {
+    if(level>120)
+      level=29;
+      else
+      level++;
+}
 void setup() {
+
+    //Particle.variable("messageSent", &messageSent, STRING);
+    Serial.begin(9600);
+    Serial.write("Hallo\r\n");
+    Serial.println("Test");
     pinMode(P1S4, OUTPUT);
     digitalWrite(P1S4,LOW);
     Time.zone(-4);
@@ -231,12 +242,6 @@ void setup() {
 //***************************************
 }
 
-void increment() {
-    if(level>120)
-      level=29;
-      else
-      level++;
-}
 
 void getTemp(){
     if(!ds18b20.search()){
@@ -249,9 +254,10 @@ void getTemp(){
 }
 
 void getLight() {
-  if(!tsl2591.begin()) {
+  if(tsl2591.begin()) {
+    Serial.println("inside");
     tsl2591.getReading();
-    tslLux= tsl2591.lux;
+    tslLux= tsl2591._lux;
     tslIR = tsl2591._ir;
     tslFull = tsl2591._full;
     TSL2591nextSampleTime = millis() + TSL2591_SAMPLE_INTERVAL;
@@ -279,10 +285,10 @@ void loop() {
     color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
     COLOR=color_target;
   }
-
+  //Serial.println("hallo");
   if (millis() >= TSL2591nextSampleTime){
     getLight();
-    Serial.println("Lux: " + tslLux +", Full: " + tslFull + ",IR: " + tslIR);
+    Serial.printf("Lux: %d, Full: %d, IR: %d \n", tslLux, tslFull, tslIR);
   }
   //celsius = TEST_TEMP_VALUE;
   //color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
