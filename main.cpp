@@ -182,9 +182,11 @@ void getTemper(){
     if(!ds18b20.search()){
       ds18b20.resetsearch();
       int check = ds18b20.getTemperature();
-      celsius = ds18b20.getTemperature();
-      fahrenheit = ds18b20.convertToFahrenheit(celsius);
-      tempC = fahrenheit;
+      if (check>0) {
+        celsius = check;
+        fahrenheit = ds18b20.convertToFahrenheit(celsius);
+        tempC = fahrenheit;
+      }
       DS18B20nextSampleTime = millis() + DS18B20_SAMPLE_INTERVAL;
       //Serial.println(fahrenheit);
     }
