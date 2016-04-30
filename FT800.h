@@ -338,6 +338,9 @@ class   FT800
     void ft800cmdWrite(unsigned char ftCommand);
     unsigned int incCMDOffset(unsigned int currentOffset, unsigned char commandSize);
     unsigned int displayText(FT800 ft800, unsigned long ftAddress, const char* text, unsigned int initX, unsigned int initY, unsigned int cmdOffset);
+    void init(FT800 ft800);
+    void draw(FT800 ft800, unsigned int cmdOffset, unsigned int COLOR, double celsius, unsigned int plant_temp_min, unsigned int plant_temp_max);
+
 };
 #endif  //FT800_h
 /** EOF FT800.h ********************************************************/

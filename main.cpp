@@ -72,7 +72,7 @@ unsigned int ft800pwrPin;			// PD_N from Arduino to FT800 - effectively FT800 re
 unsigned int ft800csPin;			// SPI chip select - defined separately since it's manipulated with GPIO calls
 */
 // LCD display parameters
-unsigned int lcdWidth;				// Active width of LCD display
+/*unsigned int lcdWidth;				// Active width of LCD display
 unsigned int lcdHeight;				// Active height of LCD display
 unsigned int lcdHcycle;				// Total number of clocks per line
 unsigned int lcdHoffset;			// Start of active line
@@ -88,7 +88,7 @@ unsigned char lcdPclkpol;			// Define active edge of PCLK
 
 unsigned long ramDisplayList = RAM_DL;		// Set beginning of display list memory
 unsigned long ramCommandBuffer = RAM_CMD;	// Set beginning of graphics command memory
-
+*/
 unsigned int cmdBufferRd = 0x0000;		// Used to navigate command ring buffer
 unsigned int cmdBufferWr = 0x0000;		// Used to navigate command ring buffer
 unsigned int cmdOffset = 0x0000;		// Used to navigate command rung buffer
@@ -96,7 +96,7 @@ unsigned int point_size = 20;		// Define a default dot size
 unsigned long point_x = (96 * 16);		// Define a default point x-location (1/16 anti-aliased)
 unsigned long point_y = (136 * 16);		// Define a default point y-location (1/16 anti-aliased)
 unsigned long color;				// Variable for chanign colors
-unsigned char ft800Gpio;			// Used for FT800 GPIO register
+//unsigned char ft800Gpio;			// Used for FT800 GPIO register
 
 String messageSent = "";
 void increment() {
@@ -109,8 +109,7 @@ void setup() {
 
     //Particle.variable("messageSent", &messageSent, STRING);
     Serial.begin(9600);
-    Serial.write("Hallo\r\n");
-    Serial.println("Test");
+    Serial.println("Debugging====");
     pinMode(P1S4, OUTPUT);
     digitalWrite(P1S4,LOW);
     Time.zone(-4);
@@ -119,25 +118,7 @@ void setup() {
     nextUpdateTime=millis();
     Particle.syncTime();
     pinMode(D2, INPUT);
-    // need change
     //ft800.triggerPin = 2;				// Used for oscilloscope/logic analyzer trigger
-    ft800.ft800irqPin = A2;				// Interrupt from FT800 to Arduino - not used here
-    ft800.ft800pwrPin = A0;				// PD_N from Arduino to FT800 - effectively FT800 reset
-    ft800.ft800csPin  = DAC;				// SPI chip select - defined separately since it's manipulated with GPIO calls
-
-    lcdWidth   = 480;				// Active width of LCD display
-    lcdHeight  = 272;				// Active height of LCD display
-    lcdHcycle  = 548;				// Total number of clocks per line
-    lcdHoffset = 43;				// Start of active line
-    lcdHsync0  = 0;				// Start of horizontal sync pulse
-    lcdHsync1  = 41;				// End of horizontal sync pulse
-    lcdVcycle  = 292;				// Total number of lines per screen
-    lcdVoffset = 12;				// Start of active screen
-    lcdVsync0  = 0;				// Start of vertical sync pulse
-    lcdVsync1  = 10;				// End of vertical sync pulse
-    lcdPclk    = 5;				// Pixel Clock
-    lcdSwizzle = 0;				// Define RGB output pins
-    lcdPclkpol = 1;				// Define active edge of PCLK
 
     SPI.begin(ft800.ft800csPin);					// Initialize SPI
     SPI.setBitOrder(MSBFIRST);			// Send data most significant bit first
@@ -154,93 +135,12 @@ void setup() {
     digitalWrite(ft800.ft800pwrPin, HIGH);		// Set PD# high to start
     delay(20);					// Wait a few MS before waking the FT800
 
-    //***************************************
-// Wake-up FT800
-
     digitalWrite(ft800.ft800pwrPin, LOW);		// 1) lower PD#
     delay(20);					// 2) hold for 20ms
     digitalWrite(ft800.ft800pwrPin, HIGH);		// 3) raise PD#
     delay(20);					// 4) wait for another 20ms before sending any commands
-
-    ft800.ft800cmdWrite(FT800_ACTIVE);			// Start FT800
-    delay(5);					// Give some time to process
-    ft800.ft800cmdWrite(FT800_CLKEXT);			// Set FT800 for external clock
-    delay(5);					// Give some time to process
-    ft800.ft800cmdWrite(FT800_CLK48M);			// Set FT800 for 48MHz PLL
-    delay(5);					// Give some time to process
-      					// Now FT800 can accept commands at up to 30MHz clock on SPI bus
-      					//   This application leaves the SPI bus at 4MHz
-
-    if (ft800.ft800memRead8(REG_ID) != 0x7C)		// Read ID register - is it 0x7C?
-    {
-        Serial.write("System Halted!\r\n");		// Send an error message on the UART
-        while(1);					// If we don't get 0x7C, the ineface isn't working - halt with infinite loop
-    }
-
-    ft800.ft800memWrite8(REG_PCLK, ZERO);		// Set PCLK to zero - don't clock the LCD until later
-    ft800.ft800memWrite8(REG_PWM_DUTY, ZERO);		// Turn off backlight
-
-// End of Wake-up FT800
-//***************************************
-
-//***************************************
-// Initialize Display
-    ft800.ft800memWrite16(REG_HSIZE,   lcdWidth);	// active display width
-    ft800.ft800memWrite16(REG_HCYCLE,  lcdHcycle);	// total number of clocks per line, incl front/back porch
-    ft800.ft800memWrite16(REG_HOFFSET, lcdHoffset);	// start of active line
-    ft800.ft800memWrite16(REG_HSYNC0,  lcdHsync0);	// start of horizontal sync pulse
-    ft800.ft800memWrite16(REG_HSYNC1,  lcdHsync1);	// end of horizontal sync pulse
-    ft800.ft800memWrite16(REG_VSIZE,   lcdHeight);	// active display height
-    ft800.ft800memWrite16(REG_VCYCLE,  lcdVcycle);	// total number of lines per screen, incl pre/post
-    ft800.ft800memWrite16(REG_VOFFSET, lcdVoffset);	// start of active screen
-    ft800.ft800memWrite16(REG_VSYNC0,  lcdVsync0);	// start of vertical sync pulse
-    ft800.ft800memWrite16(REG_VSYNC1,  lcdVsync1);	// end of vertical sync pulse
-    ft800.ft800memWrite8(REG_SWIZZLE,  lcdSwizzle);	// FT800 output to LCD - pin order
-    ft800.ft800memWrite8(REG_PCLK_POL, lcdPclkpol);	// LCD data is clocked in on this PCLK edge
-    ft800.ft800memWrite32(REG_ROTATE, 0);
-						// Don't set PCLK yet - wait for just after the first display list
-// End of Initialize Display
-//***************************************
-
-//***************************************
-// Configure Touch and Audio - not used in this example, so disable both
-  ft800.ft800memWrite8(REG_TOUCH_MODE, ZERO);		// Disable touch
-  ft800.ft800memWrite16(REG_TOUCH_RZTHRESH, ZERO);	// Eliminate any false touches
-
-  ft800.ft800memWrite8(REG_VOL_PB, ZERO);		// turn recorded audio volume down
-  ft800.ft800memWrite8(REG_VOL_SOUND, ZERO);		// turn synthesizer volume down
-  ft800.ft800memWrite16(REG_SOUND, 0x6000);		// set synthesizer to mute
-
-// End of Configure Touch and Audio
-//***************************************
-
-//***************************************
-// Write Initial Display List & Enable Display
-
-  ramDisplayList = RAM_DL;			// start of Display List
-  ft800.ft800memWrite32(ramDisplayList, DL_CLEAR_RGB); // Clear Color RGB   00000010 RRRRRRRR GGGGGGGG BBBBBBBB  (R/G/B = Colour values) default zero / black
-  ramDisplayList += 4;				// point to next location
-  ft800.ft800memWrite32(ramDisplayList, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));	// Clear 00100110 -------- -------- -----CST  (C/S/T define which parameters to clear)
-  ramDisplayList += 4;				// point to next location
-  ft800.ft800memWrite32(ramDisplayList, DL_DISPLAY);	// DISPLAY command 00000000 00000000 00000000 00000000 (end of display list)
-
-  ft800.ft800memWrite32(REG_DLSWAP, DLSWAP_FRAME);	// 00000000 00000000 00000000 000000SS  (SS bits define when render occurs)
-						// Nothing is being displayed yet... the pixel clock is still 0x00
-  ramDisplayList = RAM_DL;			// Reset Display List pointer for next list
-
-  ft800Gpio = ft800.ft800memRead8(REG_GPIO);		// Read the FT800 GPIO register for a read/modify/write operation
-  ft800Gpio = ft800Gpio | 0x80;			// set bit 7 of FT800 GPIO register (DISP) - others are inputs
-  ft800.ft800memWrite8(REG_GPIO, ft800Gpio);		// Enable the DISP signal to the LCD panel
-  ft800.ft800memWrite8(REG_PCLK, lcdPclk);		// Now start clocking data to the LCD panel
-  for(int duty = 0; duty <= 128; duty++)
-  {
-    ft800.ft800memWrite8(REG_PWM_DUTY, duty);		// Turn on backlight - ramp up slowly to full brighness
-    delay(10);
+    ft800.init(ft800);
   }
-  //myTimer.begin(increment, 1000*30/91*2, hmSec);
-// End of Write Initial Display List & Enable Display
-//***************************************
-}
 
 
 void getTemp(){
@@ -303,59 +203,6 @@ void loop() {
   }*/
 
   /* Drawing begins */
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_DLSTART));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
+  ft800.draw(ft800, cmdOffset, COLOR, celsius, plant_temp_min, plant_temp_max);
 
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR_RGB | COLOR));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_SCISSOR_SIZE | 480<<12 | 272));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR_RGB | COLOR));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_CLEAR | CLR_COL | CLR_STN | CLR_TAG));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_NUMBER));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (20));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (90));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (31));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (OPT_CENTERY));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 2);	// Update the command pointer
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, ((int)(celsius)));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        if (celsius < plant_temp_min) {
-          cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm cold! move me! :S", 10, 145, cmdOffset);
-        } else if (celsius > plant_temp_max) {
-          cmdOffset = ft800.displayText(ft800, RAM_CMD, "it's too hot! help! :(", 10, 145, cmdOffset);
-        } else {
-          cmdOffset = ft800.displayText(ft800, RAM_CMD, "i'm happy :)", 10, 145, cmdOffset);
-        }
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (DL_DISPLAY));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-
-        ft800.ft800memWrite32(RAM_CMD + cmdOffset, (CMD_SWAP));
-        cmdOffset = ft800.incCMDOffset(cmdOffset, 4);	// Update the command pointer
-
-        ft800.ft800memWrite16(REG_CMD_WRITE, (cmdOffset));
 }

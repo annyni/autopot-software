@@ -503,13 +503,11 @@ bool Adafruit_TSL2591::getReading()
   uint16_t ir, full;
   uint32_t lum = getFullLuminosity();
   lum = getFullLuminosity();
-  Serial.printf("lum in reading %d \r\n", lum);
   ir = lum >> 16;
   full = lum & 0xFFFF;
   _ir = ir;
   _full = full;
   _lux = calculateLux(full, ir);
-  Serial.printf("lux in reading %d \r\n", _lux);
 
   return true;
 }
