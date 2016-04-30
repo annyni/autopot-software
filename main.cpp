@@ -9,6 +9,10 @@
 // Also see FT800_hw.h and FT800_sw.h
 //
 #define TEST_TEMP_VALUE 20
+
+// sensor declarations
+//#define TSL2591_CONN
+
 // Set Arduino platform here
 //#define VM800B				// FTDI FT800 "Plus" board with AT328P (I/O 9 on SS#)
 #define ARDUINO					// Arduino Pro, Uno, etc. (I/O 10 on SS#)
@@ -46,9 +50,11 @@ unsigned int nextUpdateTime;
 unsigned int UPDATE_INTERVAL = 300;
 FT800 ft800 = FT800();
 
+#ifdef TSL2591_CONN
 Adafruit_TSL2591 tsl2591 = Adafruit_TSL2591(2591);
 unsigned int TSL2591nextSampleTime;
 unsigned int TSL2591_SAMPLE_INTERVAL = 600;
+#endif
 
 double celsius;
 double fahrenheit;
@@ -61,8 +67,6 @@ unsigned int COLOR=0x0091D3;
 unsigned int color_target=0x0091D3;
 unsigned int plant_temp_max= 33;
 unsigned int plant_temp_min= 23;
-unsigned int shower_time=30;
-unsigned int shower_temp=38;
 // Global Variables
 
 // Arduino pins - others defined by Serial and SPI libraries
@@ -99,12 +103,12 @@ unsigned long color;				// Variable for chanign colors
 //unsigned char ft800Gpio;			// Used for FT800 GPIO register
 
 String messageSent = "";
-void increment() {
+/*void increment() {
     if(level>120)
       level=29;
       else
       level++;
-}
+}*/
 void setup() {
 
     //Particle.variable("messageSent", &messageSent, STRING);
@@ -114,7 +118,9 @@ void setup() {
     digitalWrite(P1S4,LOW);
     Time.zone(-4);
     DS18B20nextSampleTime=millis();
+    #ifdef TSL2591_CONN
     TSL2591nextSampleTime=millis();
+    #endif
     nextUpdateTime=millis();
     Particle.syncTime();
     pinMode(D2, INPUT);
@@ -153,6 +159,9 @@ void getTemp(){
     }
 }
 
+
+// helper function for tsl2591
+#ifdef TSL2591_CONN
 void getLight() {
   if(tsl2591.begin()) {
     Serial.println("inside");
@@ -163,10 +172,9 @@ void getLight() {
     TSL2591nextSampleTime = millis() + TSL2591_SAMPLE_INTERVAL;
   }
 }
+#endif
 
 void loop() {
-     //sprintf(pubString,"{\"t\":%d,\"g\":%d}",24,5);
-    //Particle.publish("DATA",pubString);
   do
   {
     cmdBufferRd = ft800.ft800memRead16(REG_CMD_READ);	// Read the graphics processor read pointer
@@ -180,19 +188,14 @@ void loop() {
     color_target = celsius<plant_temp_min?0x99ccff:(celsius>plant_temp_max?0xff3300:0x1aff1a);
     COLOR=color_target;
   }
-  //Serial.println("hallo");
+
+  // update tsl2591 light
+  #ifdef TSL2591_CONN
   if (millis() >= TSL2591nextSampleTime){
     getLight();
     Serial.printf("Lux: %d, Full: %d, IR: %d \n", tslLux, tslFull, tslIR);
   }
- /* if(millis() >= nextUpdateTime){
-      nextUpdateTime = millis() + (shower_time*1000*.5)/((120-29+5));
-      if(level>120)
-      level=29;
-      else
-      level++;
-      Serial.println(level);
-  }*/
+  #endif
 
   /* Drawing begins */
   ft800.draw(ft800, cmdOffset, COLOR, celsius, plant_temp_min, plant_temp_max);
